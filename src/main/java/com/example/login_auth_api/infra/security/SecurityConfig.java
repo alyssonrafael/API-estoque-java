@@ -31,14 +31,27 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
+                        //rotas de registro e login permitida para todos
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
-                        //restrito para adm
+
+                        //Rotas de usuario
+                        //Restrições específicas para administradores
                         .requestMatchers(HttpMethod.PUT, "/user/changerole/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/user/authorize/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/users").hasRole("ADMIN")
-                        //liberado para ambos
+                        //Acesso liberado para ambos USER e ADMIN
                         .requestMatchers(HttpMethod.GET, "/user/**").hasAnyRole("USER", "ADMIN")
+
+                        //Configurações de acesso para rotas de categoria
+                        // Apenas administradores podem modificar categorias
+                        .requestMatchers(HttpMethod.PUT, "/categories/delete/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/categories/restore/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/categories/update-name/**").hasRole("ADMIN")
+                        // Acesso liberado para ambos USER e ADMIN para listagem
+                        .requestMatchers(HttpMethod.POST, "/categories").hasAnyRole("ADMIN", "USER")
+                        .requestMatchers(HttpMethod.GET, "/categories").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/categories/**").hasAnyRole("USER", "ADMIN")
 
                         .anyRequest().authenticated()
                 )
