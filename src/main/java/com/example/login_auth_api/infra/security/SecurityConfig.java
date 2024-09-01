@@ -53,6 +53,16 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/categories").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/categories/**").hasAnyRole("USER", "ADMIN")
 
+                        //configuraóes de acesso para rotas de produtos
+                        // Protege as rotas de produtos
+                        .requestMatchers(HttpMethod.POST, "/products").hasRole("ADMIN") // Criar produto
+                        .requestMatchers(HttpMethod.PUT, "/products").hasRole("ADMIN") // atualizaçao completa do produto
+                        .requestMatchers(HttpMethod.PUT, "/products/update-name/**").hasRole("ADMIN") // Atualizar nome do produto
+                        .requestMatchers(HttpMethod.PUT, "/products/delete/**").hasRole("ADMIN") // Excluir produto marcar com deletet true
+                        .requestMatchers(HttpMethod.PUT, "/products/restore/**").hasRole("ADMIN") // Restaurar produto marcar com deleted false
+                        .requestMatchers(HttpMethod.GET, "/products").hasAnyRole("USER", "ADMIN") // Listar e obter produto permitido pra user e adm
+                        .requestMatchers(HttpMethod.GET, "/products/count").hasAnyRole("USER", "ADMIN") // Listar e obter produto permitido pra user e adm
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
