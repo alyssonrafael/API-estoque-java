@@ -27,6 +27,8 @@ public class SaleDTO {
     private BigDecimal subtotal;
     private String userId;
     private String userName;
+    private boolean IsGift;
+
 
     @Getter
     @Setter

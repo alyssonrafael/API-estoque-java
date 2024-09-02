@@ -43,6 +43,9 @@ public class Sale {
     @Column(name = "subtotal")
     private BigDecimal subtotal;
 
+    @Column(name = "is_gift")
+    private Boolean isGift = false;
+
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -60,4 +63,5 @@ public class Sale {
         saleDate = LocalDateTime.now(); // Define a data da venda automaticamente
         totalAmount = BigDecimal.ZERO;
     }
+
 }

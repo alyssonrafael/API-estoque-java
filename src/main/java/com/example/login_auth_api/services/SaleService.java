@@ -43,6 +43,7 @@ public class SaleService {
         sale.setTotalAmount(BigDecimal.ZERO);
         sale.setObservation(saleDTO.getObservation());
         sale.setPaymentMethod(saleDTO.getPaymentMethod());
+        sale.setIsGift(saleDTO.isIsGift());
 
         // Verifica e define o desconto
         BigDecimal discount = saleDTO.getDiscount() != null ? saleDTO.getDiscount() : BigDecimal.ZERO;
@@ -117,6 +118,7 @@ public class SaleService {
         saleDTO.setPaymentMethod(sale.getPaymentMethod());
         saleDTO.setUserId(sale.getUser().getId()); // Aqui, use o campo correto que representa o UUID como String na sua entidade User
         saleDTO.setUserName(sale.getUser().getName());
+        saleDTO.setIsGift(sale.getIsGift());
 
         List<SaleDTO.SaleItemDTO> itemDTOs = sale.getItems().stream()
                 .map(item -> {
