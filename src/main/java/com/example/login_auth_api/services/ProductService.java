@@ -4,12 +4,17 @@ import com.example.login_auth_api.domain.products.Product;
 import com.example.login_auth_api.domain.products.ProductSize;
 import com.example.login_auth_api.domain.categories.Category;
 import com.example.login_auth_api.dto.ProductDTO;
+import com.example.login_auth_api.dto.ProductSizeDTO;
 import com.example.login_auth_api.repositories.ProductRepository;
 import com.example.login_auth_api.repositories.CategoryRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -86,13 +91,14 @@ public class ProductService {
     }
 
     // Método para atualizar um produto completamente
+    @Transactional
     public Product updateProduct(String id, ProductDTO productDTO) {
         // Busca o produto existente pelo ID
         Product existingProduct = productRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado com o ID: " + id));
 
         // Busca a categoria pelo ID
-        Category category = categoryRepository.findById(String.valueOf(productDTO.getCategoryId()))
+        Category category = categoryRepository.findById(productDTO.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("Categoria não encontrada com o ID: " + productDTO.getCategoryId()));
 
         // Verifica se o nome do produto já existe
@@ -104,51 +110,42 @@ public class ProductService {
         // Atualiza as propriedades do produto
         existingProduct.setName(productDTO.getName());
         existingProduct.setCategory(category);
-
-        // Define o custo e o preço do produto
         existingProduct.setCost(productDTO.getCost());
         existingProduct.setPrice(productDTO.getPrice());
 
-        // Valida e atualiza os tamanhos
-        if (productDTO.getSizes() != null) {
-            // Calcula a soma das quantidades dos tamanhos
-            int totalSizeQuantity = productDTO.getSizes().stream()
-                    .mapToInt(sizeDTO -> {
-                        if (sizeDTO.getQuantity() < 0) {
-                            throw new IllegalArgumentException("A quantidade dos tamanhos não pode ser negativa.");
-                        }
-                        return sizeDTO.getQuantity();
-                    })
-                    .sum();
+        // Cria um mapa de tamanhos existentes para fácil acesso
+        Map<String, ProductSize> existingSizesMap = existingProduct.getSizes().stream()
+                .collect(Collectors.toMap(ProductSize::getSize, size -> size));
 
-            // Verifica se a soma das quantidades dos tamanhos é negativa
-            if (totalSizeQuantity < 0) {
-                throw new IllegalArgumentException("A quantidade total não pode ser negativa.");
+        // Adiciona novos tamanhos ou atualiza tamanhos existentes
+        BigDecimal totalQuantity = BigDecimal.ZERO;
+
+        // Atualiza ou adiciona tamanhos do DTO
+        for (ProductSizeDTO sizeDTO : productDTO.getSizes()) {
+            ProductSize size = existingSizesMap.get(sizeDTO.getSize());
+            if (size != null ) {
+                // Se o tamanho já existir, atualiza a quantidade
+                size.setQuantity(sizeDTO.getQuantity());
+            } else {
+                // Se o tamanho não existir, cria um novo
+                size = new ProductSize();
+                size.setSize(sizeDTO.getSize());
+                size.setQuantity(sizeDTO.getQuantity());
+                size.setProduct(existingProduct);
+                existingProduct.getSizes().add(size);
             }
-
-            // Atualiza a quantidade do produto com base na soma das quantidades dos tamanhos
-            existingProduct.setQuantity(totalSizeQuantity);
-
-            // Remove todos os tamanhos existentes que não estão na nova lista
-            existingProduct.getSizes().clear();
-
-            // Adiciona novos tamanhos
-            List<ProductSize> sizes = productDTO.getSizes().stream()
-                    .map(sizeDTO -> {
-                        ProductSize size = new ProductSize();
-                        size.setSize(sizeDTO.getSize());
-                        size.setQuantity(sizeDTO.getQuantity());
-                        size.setProduct(existingProduct);
-                        return size;
-                    })
-                    .collect(Collectors.toList());
-
-            existingProduct.getSizes().addAll(sizes);
-        } else {
-            // Se não houver tamanhos fornecidos, zera a quantidade do produto
-            existingProduct.setQuantity(0);
-            existingProduct.getSizes().clear();
+            totalQuantity = totalQuantity.add(BigDecimal.valueOf(size.getQuantity()));
         }
+
+        // Adiciona a quantidade dos tamanhos que já estavam cadastrados e que não foram incluídos no DTO
+        for (ProductSize existingSize : existingProduct.getSizes()) {
+            if (productDTO.getSizes().stream().noneMatch(sizeDTO -> sizeDTO.getSize().equals(existingSize.getSize()))) {
+                totalQuantity = totalQuantity.add(BigDecimal.valueOf(existingSize.getQuantity()));
+            }
+        }
+
+        // Atualiza a quantidade total do produto
+        existingProduct.setQuantity(totalQuantity.intValue());
 
         // Salva e retorna o produto atualizado
         return productRepository.save(existingProduct);
