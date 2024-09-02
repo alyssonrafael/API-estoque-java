@@ -63,6 +63,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/products").hasAnyRole("USER", "ADMIN") // Listar e obter produto permitido pra user e adm
                         .requestMatchers(HttpMethod.GET, "/products/count").hasAnyRole("USER", "ADMIN") // Listar e obter produto permitido pra user e adm
 
+                        //configuracoes de acesso pra rotas de vendas
+                        .requestMatchers(HttpMethod.POST, "/sales").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/sales").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/sales/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/sales/**").hasAnyRole("USER", "ADMIN")
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
