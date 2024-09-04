@@ -9,7 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @RestController
@@ -73,5 +74,23 @@ public class SaleController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ocorreu um erro interno no servidor.");
         }
+    }
+
+    // Método para listar vendas dentro de um intervalo de datas
+    @GetMapping("/salesByDateRange")
+    public ResponseEntity<List<SaleDTO>> getSalesByDateRange(@RequestParam String start, @RequestParam String end) {
+
+        // Define o formato esperado das datas
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+
+        // Converte as strings para LocalDateTime
+        LocalDateTime startDateTime = LocalDateTime.parse(start, formatter);
+        LocalDateTime endDateTime = LocalDateTime.parse(end, formatter);
+
+        // Obtém a lista de vendas no intervalo especificado
+        List<SaleDTO> sales = saleService.listSalesByDateRange(startDateTime, endDateTime);
+
+        // Retorna a lista de vendas em formato JSON
+        return ResponseEntity.ok(sales);
     }
 }

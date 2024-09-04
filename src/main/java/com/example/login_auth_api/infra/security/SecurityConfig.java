@@ -68,6 +68,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/sales").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/sales/**").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/sales/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/sales/salesByDateRange/**").hasRole("ADMIN")
+
+                        //configuracoes de acesso pra rotas de relatorios
+                        .requestMatchers(HttpMethod.GET, "/reports/sales/**").hasRole( "ADMIN")
 
                         .anyRequest().authenticated()
                 )

@@ -224,5 +224,13 @@ public class SaleService {
         saleRepository.delete(sale);
     }
 
+    // Método para listar um range de vendas
+    public List<SaleDTO> listSalesByDateRange(LocalDateTime start, LocalDateTime end) {
+        List<Sale> sales = saleRepository.findBySaleDateBetween(start, end);
+        return sales.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
 
 }

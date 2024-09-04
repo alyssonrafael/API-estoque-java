@@ -11,6 +11,8 @@ import java.util.List;
 @Data
 public class ProductDTO {
 
+    private String id;
+
     @NotEmpty(message = "O nome do produto não pode ser nulo ou vazio.")
     private String name;
 
