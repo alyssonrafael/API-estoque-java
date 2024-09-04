@@ -28,29 +28,51 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequestDTO body) {
-        User user = this.repository.findByEmail(body.email())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        try {
+            Optional<User> userOptional = this.repository.findByEmail(body.email());
 
-        // Verifica se o usuário está autorizado
-        if (!user.getAuthorized()) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User not authorized");
+            // Se o usuário não for encontrado, retorna uma resposta com status 400 Bad Request
+            if (userOptional.isEmpty()) {
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body("Erro ao realizar login");
+            }
+
+            User user = userOptional.get();
+
+            // Verifica se o usuário está autorizado
+            if (!user.getAuthorized()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Usuário ainda não autorizado");
+            }
+
+            // Verifica se a senha está correta
+            if (passwordEncoder.matches(body.password(), user.getPassword())) {
+                String token = this.tokenService.generateToken(user);
+                return ResponseEntity.ok(new ResponseDTO(user.getName(), token, user.getRole()));
+            }
+
+            // Se a senha estiver incorreta, retorna bad request
+            return ResponseEntity.badRequest().body("Credenciais inválidas");
+        } catch (Exception e) {
+            // Retorna uma mensagem de erro genérica para erros inesperados
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ocorreu um erro interno no servidor.");
         }
-
-        // Verifica se a senha está correta
-        if (passwordEncoder.matches(body.password(), user.getPassword())) {
-            String token = this.tokenService.generateToken(user);
-            return ResponseEntity.ok(new ResponseDTO(user.getName(), token, user.getRole()));
-        }
-
-        // Se a senha estiver incorreta, retorna bad request
-        return ResponseEntity.badRequest().body("Invalid credentials");
     }
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequestDTO body) {
-        Optional<User> user = this.repository.findByEmail(body.email());
+        try {
+            Optional<User> user = this.repository.findByEmail(body.email());
 
-        if (user.isEmpty()) {
+            // Verifica se o e-mail já está registrado
+            if (user.isPresent()) {
+                // Retorna um erro 400 Bad Request com uma mensagem personalizada
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body("Erro ao Realizar cadastro, tente novamente");
+            }
+
+            // Cria um novo usuário
             User newUser = new User();
             newUser.setEmail(body.email());
             newUser.setPassword(passwordEncoder.encode(body.password()));
@@ -59,13 +81,12 @@ public class AuthController {
             newUser.setAuthorized(false); // Define authorized como false durante o registro
             this.repository.save(newUser);
 
-            // Opcional: Enviar um e-mail de confirmação ou notificação ao admin para autorizar o usuário
-
-            // Retorna um status 201 Created sem conteúdo
-            return ResponseEntity.status(HttpStatus.CREATED).build();
+            // Retorna um status 201 Created com uma mensagem de sucesso
+            return ResponseEntity.status(HttpStatus.CREATED).body("Cadastro realizado com sucesso. Aguarde a autorização do administrador.");
+        } catch (Exception e) {
+            // Retorna uma mensagem de erro genérica para erros inesperados
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ocorreu um erro interno no servidor.");
         }
-
-        return ResponseEntity.badRequest().build();
     }
 
 }

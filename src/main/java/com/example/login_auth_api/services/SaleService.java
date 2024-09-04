@@ -1,5 +1,6 @@
 package com.example.login_auth_api.services;
 
+import com.example.login_auth_api.domain.sales.PaymentMethod;
 import com.example.login_auth_api.domain.sales.Sale;
 import com.example.login_auth_api.domain.sales.SaleItem;
 import com.example.login_auth_api.domain.products.Product;
@@ -36,8 +37,10 @@ public class SaleService {
     @Autowired
     private SaleItemRepository saleItemRepository;
 
+    //Método para criar uma venda
     @Transactional
     public Sale createSale(SaleDTO saleDTO) {
+        // Criação da venda com campos básicos
         Sale sale = new Sale();
         sale.setSaleDate(LocalDateTime.now());
         sale.setTotalAmount(BigDecimal.ZERO);
@@ -45,67 +48,107 @@ public class SaleService {
         sale.setPaymentMethod(saleDTO.getPaymentMethod());
         sale.setIsGift(saleDTO.isIsGift());
 
-        // Verifica e define o desconto
+        try {
+            PaymentMethod paymentMethod = PaymentMethod.valueOf(String.valueOf(saleDTO.getPaymentMethod()));
+            sale.setPaymentMethod(paymentMethod);
+        } catch (IllegalArgumentException e) {
+            throw new CustomException("Método de pagamento inválido. Métodos aceitos: PIX, DINHEIRO, CARTAO_CREDITO, CARTAO_DEBITO.");
+        }
+
+        // Verifica e define o desconto, se não for fornecido, define como zero
         BigDecimal discount = saleDTO.getDiscount() != null ? saleDTO.getDiscount() : BigDecimal.ZERO;
+        if (discount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new CustomException("O desconto não pode ser negativo.");
+        }
         sale.setDiscount(discount);
 
         // Associa o usuário usando o UUID como String
-        User user = userRepository.findById(saleDTO.getUserId()) // Supondo que o UUID está armazenado no campo "id" da entidade User
+        User user = userRepository.findById(saleDTO.getUserId())
                 .orElseThrow(() -> new CustomException("Usuário não encontrado."));
         sale.setUser(user);
 
-        // Salva a Sale primeiro
+        // Verifica se há pelo menos um produto na venda
+        if (saleDTO.getItems() == null || saleDTO.getItems().isEmpty()) {
+            throw new CustomException("A venda deve conter pelo menos um produto.");
+        }
+
+        // Salva a Sale primeiro para gerar um ID para a venda
         sale = saleRepository.save(sale);
 
         BigDecimal totalAmount = BigDecimal.ZERO;
         BigDecimal subtotal = BigDecimal.ZERO;
 
+        // Itera sobre os itens da venda para adicionar ao banco de dados
         for (SaleDTO.SaleItemDTO itemDTO : saleDTO.getItems()) {
-            Optional<ProductSize> optionalSize = productSizeRepository.findById(itemDTO.getSizeId());
-            if (optionalSize.isEmpty()) {
-                throw new CustomException("Tamanho do produto não encontrado.");
+            // Verifica se a quantidade do produto é maior que zero
+            if (itemDTO.getQuantity() == null || itemDTO.getQuantity() <= 0) {
+                throw new CustomException("A quantidade do produto deve ser maior que zero.");
             }
 
-            ProductSize size = optionalSize.get();
+            // Busca o produto pelo ID
+            Product product = productRepository.findById(itemDTO.getProductId())
+                    .orElseThrow(() -> new CustomException("Produto não encontrado."));
+
+            // Busca o tamanho do produto pelo ID
+            ProductSize size = productSizeRepository.findById(itemDTO.getSizeId())
+                    .orElseThrow(() -> new CustomException("Tamanho do produto não encontrado."));
+
+            // Verifica se a quantidade disponível é suficiente
             if (size.getQuantity() < itemDTO.getQuantity()) {
-                throw new CustomException("Quantidade insuficiente para o tamanho do produto.");
+                // Inclui o nome do produto e o tamanho na mensagem de erro
+                String errorMessage = String.format(
+                        "Quantidade insuficiente para o produto: Nome = %s,\n ID = %s,\n Tamanho = %s,\n Quantidade disponível = %d,\n Quantidade solicitada = %d.",
+                        product.getName(),
+                        product.getId(),
+                        size.getSize(),
+                        size.getQuantity(),
+                        itemDTO.getQuantity()
+                );
+                throw new CustomException(errorMessage);
             }
 
-            Optional<Product> optionalProduct = productRepository.findById(itemDTO.getProductId());
-            if (optionalProduct.isEmpty()) {
-                throw new CustomException("Produto não encontrado.");
-            }
-
-            Product product = optionalProduct.get();
+            // Calcula o total do item (preço * quantidade)
             BigDecimal itemTotal = product.getPrice().multiply(BigDecimal.valueOf(itemDTO.getQuantity()));
 
+            // Cria o item da venda e ajusta as quantidades do produto e do tamanho
             SaleItem saleItem = new SaleItem();
             saleItem.setProduct(product);
             saleItem.setSize(size);
             saleItem.setQuantity(itemDTO.getQuantity());
 
+            // Atualiza a quantidade do tamanho e do produto
             size.setQuantity(size.getQuantity() - itemDTO.getQuantity());
             productSizeRepository.save(size);
 
             product.setQuantity(product.getQuantity() - itemDTO.getQuantity());
             productRepository.save(product);
 
+            // Adiciona o item à venda e salva no banco
             saleItem.setSale(sale);
             saleItemRepository.save(saleItem);
             sale.addSaleItem(saleItem);
 
+            // Atualiza os totais da venda
             totalAmount = totalAmount.add(itemTotal);
             subtotal = subtotal.add(itemTotal);
         }
 
+        // Verifica se o desconto não é maior que o total da venda
+        if (discount.compareTo(subtotal) > 0) {
+            throw new CustomException("O desconto não pode ser maior que o valor total da venda.");
+        }
+
+        // Calcula o subtotal final após o desconto
         BigDecimal finalSubtotal = subtotal.subtract(discount).max(BigDecimal.ZERO);
         sale.setSubtotal(finalSubtotal);
         sale.setTotalAmount(totalAmount);
 
+        // Salva a venda atualizada
         sale = saleRepository.save(sale);
 
         return sale;
     }
+
 
     public SaleDTO convertToDTO(Sale sale) {
         SaleDTO saleDTO = new SaleDTO();
@@ -142,13 +185,11 @@ public class SaleService {
     // Método para buscar uma venda por ID (ajustado para String)
     public SaleDTO getSaleById(String id) {
         Optional<Sale> optionalSale = saleRepository.findById(id);
-
         if (optionalSale.isEmpty()) {
-            throw new CustomException("Venda não encontrada."); // Exceção personalizada para venda não encontrada
+            throw new CustomException("Venda nao encontrada!");
         }
-
         Sale sale = optionalSale.get();
-        return convertToDTO(sale); // Converte a venda encontrada para SaleDTO
+        return convertToDTO(sale);
     }
 
     // Método para listar todas as vendas

@@ -7,12 +7,12 @@ import lombok.Data;
 @Data
 public class ProductSizeDTO {
 
-    @NotEmpty(message = "id is required")
+    @NotEmpty(message = "O id é obrigatorio")
     private String id;
 
-    @NotEmpty(message = "Size is required")
+    @NotEmpty(message = "O tamanho é obrigatorio")
     private String size;
 
-    @NotNull(message = "Quantity is required")
+    @NotNull(message = "A quantidade e obrigatoria")
     private Integer quantity;
 }

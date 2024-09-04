@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -18,38 +19,47 @@ public class SaleController {
     @Autowired
     private SaleService saleService;
 
+    //Endpoint para criar uma venda
     @PostMapping
-    public ResponseEntity<SaleDTO> createSale(@RequestBody SaleDTO saleDTO) {
+    public ResponseEntity<Object> createSale(@RequestBody SaleDTO saleDTO) {
         try {
             Sale sale = saleService.createSale(saleDTO);
             SaleDTO resultDTO = saleService.convertToDTO(sale);
-            return ResponseEntity.ok(resultDTO);
+            return ResponseEntity.status(HttpStatus.CREATED).body(resultDTO);
         } catch (CustomException ex) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Método de pagamento inválido. Métodos aceitos: PIX, DINHEIRO, CARTAO_CREDITO, CARTAO_DEBITO.");
         } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ocorreu um erro interno no servidor.");
         }
     }
 
     // Endpoint para listar todas as vendas
     @GetMapping
-    public ResponseEntity<List<SaleDTO>> listAllSales() {
-        List<SaleDTO> sales = saleService.listAllSales();
-        return ResponseEntity.ok(sales);
+    public ResponseEntity<?> listAllSales() {
+        try {
+            List<SaleDTO> sales = saleService.listAllSales();
+            return ResponseEntity.ok(sales);
+        } catch (Exception e) {
+            // Retorna uma mensagem de erro no corpo da resposta
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ocorreu um erro interno no servidor.");
+        }
     }
 
     // Endpoint para buscar uma venda pelo ID (ajustado para String)
     @GetMapping("/{id}")
-    public ResponseEntity<SaleDTO> getSaleById(@PathVariable String id) {
-        SaleDTO saleDTO;
+    public ResponseEntity<?> getSaleById(@PathVariable String id) {
         try {
-            saleDTO = saleService.getSaleById(id);
+            SaleDTO saleDTO = saleService.getSaleById(id);
+            return ResponseEntity.ok(saleDTO);
         } catch (CustomException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); // Retorna 404 se a venda não for encontrada
+            // Retorna a mensagem de erro como uma String simples
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null); // Retorna 500 para outros erros
+            // Retorna uma mensagem de erro genérica para outros erros
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ocorreu um erro interno no servidor.");
         }
-        return ResponseEntity.ok(saleDTO);
     }
 
     // Endpoint para deletar uma venda pelo ID
@@ -57,11 +67,11 @@ public class SaleController {
     public ResponseEntity<String> deleteSaleById(@PathVariable String id) {
         try {
             saleService.deleteSaleById(id);
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).body("Venda excluída com sucesso.");
+            return ResponseEntity.status(HttpStatus.OK).body("Venda excluída com sucesso.");
         } catch (CustomException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao excluir a venda.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ocorreu um erro interno no servidor.");
         }
     }
 }

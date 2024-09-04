@@ -11,18 +11,18 @@ import java.util.List;
 @Data
 public class ProductDTO {
 
-    @NotEmpty(message = "Name is required")
+    @NotEmpty(message = "O nome do produto não pode ser nulo ou vazio.")
     private String name;
 
-    @NotNull(message = "Category ID is required")
+    @NotNull(message = "A categoria do produto não pode ser nulo ou vazio. ")
     private String categoryId;
 
-    @NotNull(message = "Cost is required")
-    @DecimalMin(value = "0.0", inclusive = false, message = "Cost must be greater than 0")
+    @NotNull(message = "O custo do produto não pode ser nulo.")
+    @DecimalMin(value = "0.0", inclusive = false, message = "O custo do produto deve ser positivo.")
     private BigDecimal cost;
 
-    @NotNull(message = "Price is required")
-    @DecimalMin(value = "0.0", inclusive = false, message = "Price must be greater than 0")
+    @NotNull(message = "O preço do produto não pode ser nulo.")
+    @DecimalMin(value = "0.0", inclusive = false, message = "O preço do produto deve ser positivo.")
     private BigDecimal price;
 
     private Integer quantity;

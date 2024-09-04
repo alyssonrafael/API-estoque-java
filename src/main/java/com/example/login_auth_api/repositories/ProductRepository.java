@@ -12,5 +12,7 @@ public interface ProductRepository extends JpaRepository<Product, String> {
 
     List<Product> findByDeletedFalseOrderByCreatedAtDesc();
 
+    boolean existsByCategoryId(String category);
+
     long countByDeletedFalse();
 }

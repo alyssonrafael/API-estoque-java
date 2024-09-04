@@ -26,8 +26,12 @@ public class ProductController {
     // Rota para listar todos os produtos (não deletados)
     @GetMapping
     public ResponseEntity<List<Product>> getAllProducts() {
-        List<Product> products = productService.getAllProducts();
-        return ResponseEntity.ok(products);
+        try {
+            List<Product> products = productService.getAllProducts();
+            return ResponseEntity.ok(products);
+        }catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
     }
 
     // Rota para pesquisar um produto pelo ID
@@ -38,39 +42,51 @@ public class ProductController {
             return ResponseEntity.ok(product);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ocorreu um erro interno no servidor.");
         }
     }
 
-    // Rota para criar um novo produto com validação de nome duplicado
+    // Rota para criar um novo produto
     @PostMapping
     public ResponseEntity<String> createProduct(@Valid @RequestBody ProductDTO productDTO) {
         try {
             productService.createProduct(productDTO);
-            return ResponseEntity.ok("Product created successfully.");
+            return ResponseEntity.status(HttpStatus.CREATED).body("Produto criado com sucesso!");
         } catch (IllegalArgumentException e) {
             // Verifica a mensagem da exceção e define o status HTTP 409
-            if (e.getMessage().contains("Product with this name already exists.")) {
+            if (e.getMessage().contains("Já existe um produto com esse nome")) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+            }
+            if (e.getMessage().contains("Categoria não encontrada")){
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
             }
             // Caso genérico, retorna um erro com status 400
             return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ocorreu um erro interno no servidor.");
         }
     }
 
-    // Rota para atualizar um produto
+    // Rota para atualizar um produto completamente
     @PutMapping("/{id}")
-    public ResponseEntity<String> updateProduct(@PathVariable String id, @Valid @RequestBody ProductDTO productDTO) {
+    public ResponseEntity<?> updateProduct(@PathVariable String id, @Valid @RequestBody ProductDTO productDTO) {
         try {
-            productService.updateProduct(id, productDTO);
-            return ResponseEntity.ok("Product updated successfully.");
-        } catch (IllegalArgumentException e) {
-            if (e.getMessage().contains("Já existe um produto com este nome.")){
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+            Product updatedProduct = productService.updateProduct(id, productDTO);
+            return ResponseEntity.ok(updatedProduct);
+        } catch (IllegalArgumentException ex) {
+            if (ex.getMessage().contains("Produto não encontrado")){
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
             }
-            if (e.getMessage().contains("A quantidade do produto não pode ser menor que a soma das quantidades dos tamanhos associados.")){
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            if (ex.getMessage().contains("Categoria não encontrada")){
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
             }
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            if (ex.getMessage().contains("Já existe um produto com este nome.")){
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+            }
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+        } catch (Exception e){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ocorreu um erro interno no servidor.");
         }
     }
 
@@ -79,9 +95,11 @@ public class ProductController {
     public ResponseEntity<String> markAsDeleted(@PathVariable String id) {
         try {
             productService.deleteProduct(id);
-            return ResponseEntity.ok("Product marked as deleted.");
+            return ResponseEntity.ok("Produto marcado como deletado");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ocorreu um erro interno no servidor.");
         }
     }
 
@@ -90,9 +108,11 @@ public class ProductController {
     public ResponseEntity<String> unmarkAsDeleted(@PathVariable String id) {
         try {
             productService.restoreProduct(id);
-            return ResponseEntity.ok("Product restored successfully.");
+            return ResponseEntity.ok("Produto restaurado com sucesso.");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ocorreu um erro interno no servidor.");
         }
     }
 
@@ -102,17 +122,31 @@ public class ProductController {
         String newName = requestBody.get("newName");
         try {
             productService.updateProductName(id, newName);
-            return ResponseEntity.ok("Product name updated successfully.");
+            return ResponseEntity.ok("Nome do produto atualizado com sucesso");
         } catch (IllegalArgumentException e) {
+            if (e.getMessage().contains("O nome do produto não pode ser nulo ou vazio.")){
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            }
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        } catch (Exception e) {
+            // Captura qualquer outra exceção e retorna erro interno do servidor
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ocorreu um erro interno no servidor.");
         }
     }
+
     //rota pra contar a quantidade de produtos
     @GetMapping("/count")
-    public ResponseEntity<Long> getProductCount() {
-        long productCount = productService.countProducts();
-        return ResponseEntity.ok(productCount);
+    public ResponseEntity<String> getProductCount() {
+        try {
+            // Obtém a contagem de produtos não deletados usando o serviço de produtos
+            long productCount = productService.countProducts();
+            String message = "Quantidade de produtos não deletados: " + productCount;
+            return ResponseEntity.ok(message);
+        } catch (Exception e) {
+            // Retorna uma resposta de erro interno do servidor com a mensagem da exceção
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ocorreu um erro interno no servidor.");
+        }
     }
 }

@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,19 +33,22 @@ public class ProductService {
     public Product createProduct(ProductDTO productDTO) {
         // Lançamento de erro se a categoria não for encontrada
         Category category = categoryRepository.findById(String.valueOf(productDTO.getCategoryId()))
-                .orElseThrow(() -> new IllegalArgumentException("Categoria não encontrada com o ID: " + productDTO.getCategoryId()));
+                .orElseThrow(() -> new IllegalArgumentException("Categoria não encontrada"));
 
         // Lançamento de erro se o nome der conflito, ou seja, já existir
         Optional<Product> existingProduct = productRepository.findByName(productDTO.getName());
         if (existingProduct.isPresent()) {
-            throw new IllegalArgumentException("Product with this name already exists.");
+            throw new IllegalArgumentException("Já existe um produto com esse nome");
         }
 
-        // Calcula a soma das quantities dos tamanhos associados ao produto e valida se há quantidades negativas
+        // Validação dos tamanhos e cálculo da quantidade total
         int totalSizeQuantity = productDTO.getSizes().stream()
                 .mapToInt(sizeDTO -> {
-                    if (sizeDTO.getQuantity() < 0) {
-                        throw new IllegalArgumentException("A quantidade dos tamanhos não pode ser negativa.");
+                    if (sizeDTO.getSize() == null || sizeDTO.getSize().trim().isEmpty()) {
+                        throw new IllegalArgumentException("O tamanho não pode ser nulo ou vazio.");
+                    }
+                    if (sizeDTO.getQuantity() == null || sizeDTO.getQuantity() < 0) {
+                        throw new IllegalArgumentException("A quantidade dos tamanhos não pode ser negativa ou nula.");
                     }
                     return sizeDTO.getQuantity();
                 })
@@ -62,6 +64,7 @@ public class ProductService {
         product.setCost(productDTO.getCost());
         product.setPrice(productDTO.getPrice());
 
+        // Criação dos tamanhos associados ao produto, se existirem
         if (productDTO.getSizes() != null) {
             List<ProductSize> sizes = productDTO.getSizes().stream()
                     .map(sizeDTO -> {
@@ -75,14 +78,14 @@ public class ProductService {
             product.setSizes(sizes);
         }
 
+        // Salva e retorna o produto criado
         return productRepository.save(product);
     }
-
 
     // Método para buscar um produto pelo ID
     public Product getProductById(String id) {
         return productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado com o ID: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado"));
     }
 
     // Método para buscar todos os produtos nao deletados
@@ -95,11 +98,11 @@ public class ProductService {
     public Product updateProduct(String id, ProductDTO productDTO) {
         // Busca o produto existente pelo ID
         Product existingProduct = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado com o ID: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado"));
 
         // Busca a categoria pelo ID
         Category category = categoryRepository.findById(productDTO.getCategoryId())
-                .orElseThrow(() -> new IllegalArgumentException("Categoria não encontrada com o ID: " + productDTO.getCategoryId()));
+                .orElseThrow(() -> new IllegalArgumentException("Categoria não encontrada"));
 
         // Verifica se o nome do produto já existe
         Optional<Product> existingProductWithName = productRepository.findByName(productDTO.getName());
@@ -122,8 +125,19 @@ public class ProductService {
 
         // Atualiza ou adiciona tamanhos do DTO
         for (ProductSizeDTO sizeDTO : productDTO.getSizes()) {
+            // Valida se o nome do tamanho está vazio
+            if (sizeDTO.getSize() == null || sizeDTO.getSize().trim().isEmpty()) {
+                throw new IllegalArgumentException("O nome do tamanho não pode estar vazio.");
+            }
+
+            // Valida se a quantidade é maior ou igual a 0
+            if (sizeDTO.getQuantity() == null || sizeDTO.getQuantity() < 0) {
+                throw new IllegalArgumentException("A quantidade do tamanho deve ser maior ou igual a 0.");
+            }
+
+            // Recupera o tamanho existente ou cria um novo se necessário
             ProductSize size = existingSizesMap.get(sizeDTO.getSize());
-            if (size != null ) {
+            if (size != null) {
                 // Se o tamanho já existir, atualiza a quantidade
                 size.setQuantity(sizeDTO.getQuantity());
             } else {
@@ -151,11 +165,10 @@ public class ProductService {
         return productRepository.save(existingProduct);
     }
 
-
     // Método para marcar um produto como deletado
     public void deleteProduct(String id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado com o ID: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado"));
 
         product.setDeleted(true);
         productRepository.save(product);
@@ -164,7 +177,7 @@ public class ProductService {
     // Método para restaurar um produto
     public void restoreProduct(String id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado com o ID: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado"));
 
         product.setDeleted(false);
         productRepository.save(product);
@@ -172,8 +185,14 @@ public class ProductService {
 
     // Método para atualizar o nome do produto
     public void updateProductName(String id, String newName) {
+
+        // Verifica se o novo nome é nulo ou vazio
+        if (newName == null || newName.trim().isEmpty()) {
+            throw new IllegalArgumentException("O nome do produto não pode ser nulo ou vazio.");
+        }
+
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado com o ID: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado"));
 
         // Verifica se o novo nome já está em uso
         if (productRepository.findByName(newName).isPresent() && !productRepository.findByName(newName).get().getId().equals(id)) {
