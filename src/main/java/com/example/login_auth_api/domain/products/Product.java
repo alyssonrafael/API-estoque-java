@@ -54,6 +54,10 @@ public class Product {
     @Column(name = "price")
     private BigDecimal price;
 
+    // Novo campo para quantidade vendida
+    @Column(name = "quantity_sold", nullable = false)
+    private Integer quantitySold = 0;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

@@ -33,6 +33,8 @@ public class ProductDTO {
 
     private Integer quantity;
 
+    private Integer quantitySold;
+
     private List<ProductSizeDTO> sizes;
 
     // Método de conversão de Product para ProductDTO
@@ -45,6 +47,7 @@ public class ProductDTO {
         dto.setPrice(product.getPrice());
         dto.setQuantity(product.getQuantity());
         dto.setDeleted(product.isDeleted());
+        dto.setQuantitySold(product.getQuantitySold());
 
         // Converter os tamanhos, assumindo que ProductSizeDTO também possui um método fromEntity
         dto.setSizes(product.getSizes().stream()

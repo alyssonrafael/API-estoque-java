@@ -121,6 +121,7 @@ public class SaleService {
             productSizeRepository.save(size);
 
             product.setQuantity(product.getQuantity() - itemDTO.getQuantity());
+            product.setQuantitySold(product.getQuantitySold() + itemDTO.getQuantity());
             productRepository.save(product);
 
             // Adiciona o item à venda e salva no banco
@@ -214,6 +215,13 @@ public class SaleService {
             // Atualizar a quantidade total do produto
             Product product = saleItem.getProduct();
             product.setQuantity(product.getQuantity() + saleItem.getQuantity());
+
+            // Atualizar a quantidade vendida, garantindo que não fique negativa
+            int updatedQuantitySold = product.getQuantitySold() - saleItem.getQuantity();
+            if (updatedQuantitySold < 0) {
+                updatedQuantitySold = 0; // Se o valor calculado for negativo, definir como zero
+            }
+            product.setQuantitySold(updatedQuantitySold);
             productRepository.save(product);
         }
 

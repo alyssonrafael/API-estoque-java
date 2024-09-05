@@ -88,11 +88,13 @@ public class ReportController {
     @GetMapping("/products")
     public ResponseEntity<byte[]> getProductsReport(
             @RequestParam(required = false, defaultValue = "csv") String format,
-            @RequestParam(required = false) Boolean deleted) throws IOException {
+            @RequestParam(required = false) Boolean deleted,
+            @RequestParam(required = false) Boolean profit) throws IOException {
 
         List<ProductDTO> productDTOs;
-
         List<Product> products;
+
+        // Determina se busca produtos deletados, não deletados, ou todos
         if (deleted != null) {
             if (deleted) {
                 products = productService.getAllProductsDeleted();
@@ -103,6 +105,7 @@ public class ReportController {
             products = productService.findAllProducts();
         }
 
+        // Mapeia os produtos para DTOs
         productDTOs = products.stream()
                 .map(ProductDTO::fromEntity)
                 .collect(Collectors.toList());
@@ -110,20 +113,27 @@ public class ReportController {
         ByteArrayInputStream report;
         String filename = "relatorio_produtos";
 
+        // Geração do relatório em PDF
         if ("pdf".equalsIgnoreCase(format)) {
-            report = reportProductsService.generateProductsPdfReport(productDTOs);
+            // Chama o serviço para gerar o relatório PDF, considerando se o lucro deve ser incluído
+            report = reportProductsService.generateProductsPdfReport(productDTOs, profit);
             filename += ".pdf";
             HttpHeaders headers = new HttpHeaders();
             headers.add(HttpHeaders.CONTENT_TYPE, "application/pdf");
             headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename);
             return ResponseEntity.ok().headers(headers).body(report.readAllBytes());
+
+            // Geração do relatório em CSV
         } else if ("csv".equalsIgnoreCase(format)) {
-            report = reportProductsService.generateProductsCsvReport(productDTOs, deleted);
+            // Chama o serviço para gerar o relatório CSV, considerando se o lucro deve ser incluído
+            report = reportProductsService.generateProductsCsvReport(productDTOs, deleted, profit);
             filename += ".csv";
             HttpHeaders headers = new HttpHeaders();
             headers.add(HttpHeaders.CONTENT_TYPE, "text/csv");
             headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename);
             return ResponseEntity.ok().headers(headers).body(report.readAllBytes());
+
+            // Caso o formato seja inválido
         } else {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Formato não suportado".getBytes());
         }
