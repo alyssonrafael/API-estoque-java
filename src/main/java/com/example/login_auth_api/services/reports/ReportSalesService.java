@@ -1,9 +1,7 @@
-package com.example.login_auth_api.services;
+package com.example.login_auth_api.services.reports;
 
-import com.example.login_auth_api.domain.products.Product;
-import com.example.login_auth_api.dto.ProductDTO;
 import com.example.login_auth_api.dto.SaleDTO;
-import com.itextpdf.kernel.colors.ColorConstants;
+import com.example.login_auth_api.services.PageNumberHandler;
 import com.itextpdf.kernel.colors.DeviceRgb;
 import com.itextpdf.kernel.events.PdfDocumentEvent;
 import com.itextpdf.kernel.geom.PageSize;
@@ -28,7 +26,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class ReportService {
+public class ReportSalesService {
 
     // Método para gerar o relatório em CSV das vendas
     public ByteArrayInputStream generateSalesCsvReport(List<SaleDTO> sales, LocalDateTime startDateTime, LocalDateTime endDateTime) {

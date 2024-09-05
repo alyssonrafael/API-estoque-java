@@ -88,9 +88,19 @@ public class ProductService {
                 .orElseThrow(() -> new IllegalArgumentException("Produto não encontrado"));
     }
 
+    //Método para listar todos independente se ta deletado ou nao
+    public List<Product> findAllProducts() {
+        return productRepository.findAll();
+    }
+
     // Método para buscar todos os produtos nao deletados
     public List<Product> getAllProducts() {
         return productRepository.findByDeletedFalseOrderByCreatedAtDesc();
+    }
+
+    // Método para buscar todos os produtos deletados
+    public List<Product> getAllProductsDeleted() {
+        return productRepository.findByDeletedTrueOrderByCreatedAtDesc();
     }
 
     // Método para atualizar um produto completamente

@@ -61,6 +61,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/products/delete/**").hasRole("ADMIN") // Excluir produto marcar com deletet true
                         .requestMatchers(HttpMethod.PUT, "/products/restore/**").hasRole("ADMIN") // Restaurar produto marcar com deleted false
                         .requestMatchers(HttpMethod.GET, "/products").hasAnyRole("USER", "ADMIN") // Listar e obter produto permitido pra user e adm
+                        .requestMatchers(HttpMethod.GET, "/products/deleted").hasAnyRole("USER", "ADMIN") // Listar e obter produto permitido pra user e adm
                         .requestMatchers(HttpMethod.GET, "/products/count").hasAnyRole("USER", "ADMIN") // Listar e obter produto permitido pra user e adm
 
                         //configuracoes de acesso pra rotas de vendas
@@ -72,6 +73,7 @@ public class SecurityConfig {
 
                         //configuracoes de acesso pra rotas de relatorios
                         .requestMatchers(HttpMethod.GET, "/reports/sales/**").hasRole( "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/reports/products/**").hasRole( "ADMIN")
 
                         .anyRequest().authenticated()
                 )

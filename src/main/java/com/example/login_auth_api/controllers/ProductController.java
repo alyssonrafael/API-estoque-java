@@ -34,6 +34,26 @@ public class ProductController {
         }
     }
 
+    @GetMapping("/all")
+    public ResponseEntity<List<Product>> findAllProducts() {
+        try {
+            List<Product> products = productService.findAllProducts();
+            return ResponseEntity.ok(products);
+        }catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @GetMapping("/deleted")
+    public ResponseEntity<List<Product>> getAllDeletedProducts() {
+        try {
+            List<Product> products = productService.getAllProductsDeleted();
+            return ResponseEntity.ok(products);
+        }catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
     // Rota para pesquisar um produto pelo ID
     @GetMapping("/{id}")
     public ResponseEntity<?> getProductById(@PathVariable String id) {

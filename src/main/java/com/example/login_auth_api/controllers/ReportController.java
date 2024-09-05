@@ -1,9 +1,11 @@
 package com.example.login_auth_api.controllers;
 
+import com.example.login_auth_api.domain.products.Product;
+import com.example.login_auth_api.dto.ProductDTO;
 import com.example.login_auth_api.dto.SaleDTO;
-import com.example.login_auth_api.repositories.ProductRepository;
 import com.example.login_auth_api.services.ProductService;
-import com.example.login_auth_api.services.ReportService;
+import com.example.login_auth_api.services.reports.ReportProductsService;
+import com.example.login_auth_api.services.reports.ReportSalesService;
 import com.example.login_auth_api.services.SaleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -20,26 +22,29 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/reports")
 public class ReportController {
 
     @Autowired
-    private ReportService reportService;
+    private ReportSalesService reportSalesService;
+
+    @Autowired
+    private ReportProductsService reportProductsService;
+
+    @Autowired
+    private ProductService productService; // Serviço que lida com os produto
 
     @Autowired
     private SaleService saleService; // Serviço que busca as vendas do banco de dados
 
-    @Autowired
-    private ProductService productService; // Serviço que retorna os dados dos produtos
-    @Autowired
-    private ProductRepository productRepository;
 
     //Rota para listar todas as vendas ou vendas por data no formato PDF ou CSV
     @GetMapping("/sales")
     public ResponseEntity<byte[]> getSalesReport(
-            @RequestParam String format,  // Parâmetro obrigatório que especifica o formato do relatório (csv ou pdf).
+            @RequestParam(required = false, defaultValue = "csv") String format,  // Parâmetro obrigatório que especifica o formato do relatório (csv ou pdf).
             @RequestParam(required = false) String start,  // Parâmetro opcional que define a data e hora de início do intervalo de datas no formato "yyyy-MM-dd'T'HH:mm:ss".
             // Parâmetro opcional que define a data e hora de fim do intervalo de datas no formato "yyyy-MM-dd'T'HH:mm:ss".
             @RequestParam(required = false) String end) throws IOException {
@@ -78,23 +83,64 @@ public class ReportController {
         return generateReportWithDateRange(format, sales, startDateTime, endDateTime);
     }
 
+
+    //rota para listar produto
     @GetMapping("/products")
+    public ResponseEntity<byte[]> getProductsReport(
+            @RequestParam(required = false, defaultValue = "csv") String format,
+            @RequestParam(required = false) Boolean deleted) throws IOException {
 
+        List<ProductDTO> productDTOs;
 
+        List<Product> products;
+        if (deleted != null) {
+            if (deleted) {
+                products = productService.getAllProductsDeleted();
+            } else {
+                products = productService.getAllProducts();
+            }
+        } else {
+            products = productService.findAllProducts();
+        }
 
+        productDTOs = products.stream()
+                .map(ProductDTO::fromEntity)
+                .collect(Collectors.toList());
+
+        ByteArrayInputStream report;
+        String filename = "relatorio_produtos";
+
+        if ("pdf".equalsIgnoreCase(format)) {
+            report = reportProductsService.generateProductsPdfReport(productDTOs);
+            filename += ".pdf";
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.CONTENT_TYPE, "application/pdf");
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename);
+            return ResponseEntity.ok().headers(headers).body(report.readAllBytes());
+        } else if ("csv".equalsIgnoreCase(format)) {
+            report = reportProductsService.generateProductsCsvReport(productDTOs, deleted);
+            filename += ".csv";
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.CONTENT_TYPE, "text/csv");
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename);
+            return ResponseEntity.ok().headers(headers).body(report.readAllBytes());
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Formato não suportado".getBytes());
+        }
+    }
 
     //Método para gerar e retornar um relatório no formato CSV ou PDF com tratamento de erro
     private ResponseEntity<byte[]> generateReportWithDateRange(String format, List<SaleDTO> sales, LocalDateTime startDateTime, LocalDateTime endDateTime) {
         ByteArrayInputStream reportStream;
         try {
             if ("csv".equalsIgnoreCase(format)) {
-                reportStream = reportService.generateSalesCsvReport(sales, startDateTime, endDateTime);
+                reportStream = reportSalesService.generateSalesCsvReport(sales, startDateTime, endDateTime);
                 return ResponseEntity.ok()
                         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=relatorio_vendas.csv")
                         .contentType(MediaType.TEXT_PLAIN)
                         .body(reportStream.readAllBytes());
             } else if ("pdf".equalsIgnoreCase(format)) {
-                reportStream = reportService.generateSalesPdfReport(sales, startDateTime, endDateTime);
+                reportStream = reportSalesService.generateSalesPdfReport(sales, startDateTime, endDateTime);
                 return ResponseEntity.ok()
                         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=relatorio_vendas.pdf")
                         .contentType(MediaType.APPLICATION_PDF)
