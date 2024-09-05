@@ -19,7 +19,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -165,6 +164,7 @@ public class ReportProductsService {
         return new Cell().add(content).setPadding(2);
     }
 
+    //Método auxiliar para calcular o lucro do porduto
     private BigDecimal calculateProfit(ProductDTO product) {
         // Exemplo básico de cálculo do lucro: (preço - custo) * quantidade vendida
         BigDecimal revenue = product.getPrice().subtract(product.getCost());

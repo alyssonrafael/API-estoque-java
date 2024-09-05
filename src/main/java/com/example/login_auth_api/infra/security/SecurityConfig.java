@@ -74,6 +74,20 @@ public class SecurityConfig {
                         //configuracoes de acesso pra rotas de relatorios
                         .requestMatchers(HttpMethod.GET, "/reports/sales/**").hasRole( "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/reports/products/**").hasRole( "ADMIN")
+                        //relatorios de numeros
+                        .requestMatchers(HttpMethod.GET, "/reports/sales-by-payment-method").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/reports/gift-sales-count").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/reports/sales-today").hasAnyRole("ADMIN", "USER")
+                        .requestMatchers(HttpMethod.GET, "/reports/sales-this-month").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/reports/sales-this-year").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/reports/total-sales-today").hasAnyRole("ADMIN","USER")
+                        .requestMatchers(HttpMethod.GET, "/reports/total-sales-this-month").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/reports/total-sales-this-year").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/reports/total-sales-by-month-last-three-months").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/reports/category-top-today").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/reports/category-top-this-month").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/reports/category-top-this-year").hasRole("ADMIN")
+
 
                         .anyRequest().authenticated()
                 )

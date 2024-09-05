@@ -1,9 +1,11 @@
 package com.example.login_auth_api.controllers;
 
 import com.example.login_auth_api.domain.products.Product;
+import com.example.login_auth_api.domain.sales.PaymentMethod;
 import com.example.login_auth_api.dto.ProductDTO;
 import com.example.login_auth_api.dto.SaleDTO;
 import com.example.login_auth_api.services.ProductService;
+import com.example.login_auth_api.services.reports.ReportNumbersService;
 import com.example.login_auth_api.services.reports.ReportProductsService;
 import com.example.login_auth_api.services.reports.ReportSalesService;
 import com.example.login_auth_api.services.SaleService;
@@ -19,9 +21,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -40,6 +44,8 @@ public class ReportController {
     @Autowired
     private SaleService saleService; // Serviço que busca as vendas do banco de dados
 
+    @Autowired
+    private ReportNumbersService reportNumbersService;
 
     //Rota para listar todas as vendas ou vendas por data no formato PDF ou CSV
     @GetMapping("/sales")
@@ -165,4 +171,91 @@ public class ReportController {
         }
     }
 
+    //Rotas para relatorio de numeros
+
+    //rota para numero de vendas por metodo de pagamento
+    @GetMapping("/sales-by-payment-method")
+    public Map<String, Integer> getSalesByPaymentMethod() {
+        Map<PaymentMethod, Integer> salesByMethod = reportNumbersService.getSalesByPaymentMethod();
+
+        // Converte o mapa com PaymentMethod como chave para um mapa com String (em maiúsculas) como chave
+        return salesByMethod.entrySet().stream()
+                .collect(Collectors.toMap(
+                        entry -> formatPaymentMethod(entry.getKey()), // Chave formatada
+                        Map.Entry::getValue // Valor
+                ));
+    }
+
+    // Endpoint para retornar a quantidade de vendas com isGift = true
+    @GetMapping("/gift-sales-count")
+    public long getCountOfGiftSales() {
+        return reportNumbersService.getCountOfGiftSales();
+    }
+
+    //rotas para retornar vendas dia mes e ano
+    @GetMapping("/sales-today")
+    public long getCountOfSalesToday() {
+        return reportNumbersService.getCountOfSalesToday();
+    }
+
+    @GetMapping("/sales-this-month")
+    public long getCountOfSalesThisMonth() {
+        return reportNumbersService.getCountOfSalesThisMonth();
+    }
+
+    @GetMapping("/sales-this-year")
+    public long getCountOfSalesThisYear() {
+        return reportNumbersService.getCountOfSalesThisYear();
+    }
+
+    @GetMapping("/sales-last-three-months")
+    public Map<String, Integer> getSalesByMonthLastThreeMonths() {
+        return reportNumbersService.getSalesByMonthLastThreeMonths();
+    }
+    //rotas para retorno de valores dia mes ano
+    @GetMapping("/total-sales-today")
+    public ResponseEntity<BigDecimal> getTotalSalesToday() {
+        return ResponseEntity.ok(reportNumbersService.getTotalSalesToday());
+    }
+
+    @GetMapping("/total-sales-this-month")
+    public ResponseEntity<BigDecimal> getTotalSalesThisMonth() {
+        return ResponseEntity.ok(reportNumbersService.getTotalSalesThisMonth());
+    }
+
+    @GetMapping("/total-sales-this-year")
+    public ResponseEntity<BigDecimal> getTotalSalesThisYear() {
+        return ResponseEntity.ok(reportNumbersService.getTotalSalesThisYear());
+    }
+
+    @GetMapping("/total-sales-by-month-last-three-months")
+    public Map<String, BigDecimal> getTotalSalesByMonthLastThreeMonths() {
+        return reportNumbersService.getTotalSalesByMonthLastThreeMonths();
+    }
+
+    //rota para rank de categoria mais vendida do dia mes ano
+    @GetMapping("/category-top-today")
+    public Map<String, Long> getTopCategoriesForToday() {
+        return reportNumbersService.getTopCategoriesForToday();
+    }
+    @GetMapping("/category-top-this-month")
+    public Map<String, Long> getTopCategoriesForMonth() {
+        return reportNumbersService.getTopCategoriesForMonth();
+    }
+    @GetMapping("/category-top-this-year")
+    public Map<String, Long> getTopCategoriesForYear() {
+        return reportNumbersService.getTopCategoriesForYear();
+    }
+
+    //Método auxiliar para formatar o retorno do tipo de pagamento
+    private String formatPaymentMethod(PaymentMethod method) {
+        switch (method) {
+            case DINHEIRO: return "DINHEIRO";
+            case DEBITO: return "DÉBITO";
+            case CREDITO: return "CRÉDITO";
+            case PIX: return "PIX";
+            case OUTRO: return "OUTRO";
+            default: return method.name().toUpperCase(); // Por segurança, se adicionar novos métodos
+        }
+    }
 }
