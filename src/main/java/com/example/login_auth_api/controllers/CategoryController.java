@@ -102,6 +102,14 @@ public class CategoryController {
     @PostMapping
     public ResponseEntity<String> createCategory(@Valid @RequestBody CategoryDTO categoryDTO) {
         try {
+            // Verifica se o número de categorias cadastradas já atingiu o limite de 15
+            long categoryCount = categoryRepository.count(); // Conta o número total de categorias
+            if (categoryCount >= 10) {
+                // Retorna um erro 400 Bad Request informando que o limite de categorias foi atingido
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Limite máximo de categorias atingido. Não é possível criar mais categorias.");
+            }
+
             // Verificação de duplicidade pelo nome da categoria
             Optional<Category> existingCategory = categoryRepository.findByNome(categoryDTO.getNome());
             if (existingCategory.isPresent()) {
@@ -113,10 +121,13 @@ public class CategoryController {
             newCategory.setNome(categoryDTO.getNome());
             newCategory.setDeleted(categoryDTO.getDeleted() != null ? categoryDTO.getDeleted() : false);
 
+            // Salva a nova categoria no banco de dados
             categoryRepository.save(newCategory);
             return ResponseEntity.status(HttpStatus.OK).body("Categoria cadastrada com sucesso");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ocorreu um erro interno no servidor.");
+            // Retorna uma mensagem de erro genérica para erros inesperados
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Ocorreu um erro interno no servidor.");
         }
     }
 

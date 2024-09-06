@@ -62,9 +62,17 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequestDTO body) {
         try {
-            Optional<User> user = this.repository.findByEmail(body.email());
+            // Verifica se o número de usuários cadastrados já atingiu o limite de 5
+            long userCount = this.repository.count(); // Conta o número total de usuários
+            if (userCount >= 5) {
+                // Retorna um erro 400 Bad Request com uma mensagem personalizada
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body("Limite máximo de usuários atingido. Não é possível criar mais usuários.");
+            }
 
             // Verifica se o e-mail já está registrado
+            Optional<User> user = this.repository.findByEmail(body.email());
             if (user.isPresent()) {
                 // Retorna um erro 400 Bad Request com uma mensagem personalizada
                 return ResponseEntity
@@ -82,10 +90,12 @@ public class AuthController {
             this.repository.save(newUser);
 
             // Retorna um status 201 Created com uma mensagem de sucesso
-            return ResponseEntity.status(HttpStatus.CREATED).body("Cadastro realizado com sucesso. Aguarde a autorização do administrador.");
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body("Cadastro realizado com sucesso. Aguarde a autorização do administrador.");
         } catch (Exception e) {
             // Retorna uma mensagem de erro genérica para erros inesperados
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ocorreu um erro interno no servidor.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Ocorreu um erro interno no servidor.");
         }
     }
 

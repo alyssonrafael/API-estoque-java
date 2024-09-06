@@ -12,9 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,6 +29,13 @@ public class ProductService {
 
     // Método para criar um produto
     public Product createProduct(ProductDTO productDTO) {
+
+        // Verifica se o número total de produtos já atingiu o limite de 300
+        long totalProducts = productRepository.count();
+        if (totalProducts >= 300) {
+            throw new IllegalArgumentException("Limite máximo de 300 produtos atingido. Não é possível criar mais produtos. Verifique a possibilidae de expancão com o suporte");
+        }
+
         // Lançamento de erro se a categoria não for encontrada
         Category category = categoryRepository.findById(String.valueOf(productDTO.getCategoryId()))
                 .orElseThrow(() -> new IllegalArgumentException("Categoria não encontrada"));
@@ -41,8 +46,26 @@ public class ProductService {
             throw new IllegalArgumentException("Já existe um produto com esse nome");
         }
 
-        // Validação dos tamanhos e cálculo da quantidade total
-        int totalSizeQuantity = productDTO.getSizes().stream()
+        // Agrupa os tamanhos com o mesmo valor e soma suas quantidades
+        Map<String, Integer> combinedSizes = productDTO.getSizes().stream()
+                .collect(Collectors.toMap(
+                        ProductSizeDTO::getSize,
+                        ProductSizeDTO::getQuantity,
+                        Integer::sum
+                ));
+
+        // Converte o Map de tamanhos combinados de volta para uma lista de ProductSizeDTO
+        List<ProductSizeDTO> combinedSizeList = combinedSizes.entrySet().stream()
+                .map(entry -> new ProductSizeDTO(null, entry.getKey(), entry.getValue()))  // Define o id como null ou algum valor padrão
+                .collect(Collectors.toList());
+
+        // Verifica se o produto tem mais de 7 tamanhos após o agrupamento
+        if (combinedSizeList.size() > 7) {
+            throw new IllegalArgumentException("O produto não pode ter mais de 7 tamanhos.");
+        }
+
+        // Validação dos tamanhos agrupados e cálculo da quantidade total
+        int totalSizeQuantity = combinedSizeList.stream()
                 .mapToInt(sizeDTO -> {
                     if (sizeDTO.getSize() == null || sizeDTO.getSize().trim().isEmpty()) {
                         throw new IllegalArgumentException("O tamanho não pode ser nulo ou vazio.");
@@ -66,7 +89,7 @@ public class ProductService {
 
         // Criação dos tamanhos associados ao produto, se existirem
         if (productDTO.getSizes() != null) {
-            List<ProductSize> sizes = productDTO.getSizes().stream()
+            List<ProductSize> sizes = combinedSizeList.stream()
                     .map(sizeDTO -> {
                         ProductSize size = new ProductSize();
                         size.setSize(sizeDTO.getSize());
@@ -130,7 +153,17 @@ public class ProductService {
         Map<String, ProductSize> existingSizesMap = existingProduct.getSizes().stream()
                 .collect(Collectors.toMap(ProductSize::getSize, size -> size));
 
-        // Adiciona novos tamanhos ou atualiza tamanhos existentes
+        // Conta o número de tamanhos existentes e os que estão sendo passados no DTO
+        Set<String> combinedSizes = new HashSet<>(existingSizesMap.keySet());
+        combinedSizes.addAll(productDTO.getSizes().stream()
+                .map(ProductSizeDTO::getSize)
+                .collect(Collectors.toSet()));
+
+        // Verifica se o total de tamanhos é maior que 7
+        if (combinedSizes.size() > 7) {
+            throw new IllegalArgumentException("O produto não pode ter mais de 7 tamanhos.");
+        }
+
         BigDecimal totalQuantity = BigDecimal.ZERO;
 
         // Atualiza ou adiciona tamanhos do DTO
