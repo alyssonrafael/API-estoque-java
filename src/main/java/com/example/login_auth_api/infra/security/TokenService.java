@@ -21,32 +21,93 @@ public class TokenService {
         try {
             Algorithm algorithm = Algorithm.HMAC256(secret);
 
-            String token = JWT.create()
+            return JWT.create()
                     .withIssuer("login-auth-api")
                     .withSubject(user.getEmail())
+                    .withClaim("role", user.getRole().name())
+                    .withClaim("name", user.getName())
+                    .withClaim("userId", user.getId())
                     .withExpiresAt(this.generateExpirationDate())
                     .sign(algorithm);
-            return token;
 
         } catch (JWTCreationException exception) {
-            throw new RuntimeException("erro enquanto estava autenticando");
+            throw new RuntimeException("Erro ao criar o token", exception);
         }
     }
 
+    // Retorna o e-mail do usuário se o token for válido, senão retorna null
     public String validateToken(String token) {
         try {
             Algorithm algorithm = Algorithm.HMAC256(secret);
-            return JWT.require(algorithm)
+            var decodedJWT = JWT.require(algorithm)
                     .withIssuer("login-auth-api")
                     .build()
-                    .verify(token)
-                    .getSubject();
+                    .verify(token);
+
+            return decodedJWT.getSubject(); // Retorna o email do usuário
+
         } catch (JWTVerificationException exception) {
             return null;
         }
     }
 
+    // Retorna um objeto com todas as informações do token
+    public TokenValidationResponse getTokenValidationResponse(String token) {
+        try {
+            Algorithm algorithm = Algorithm.HMAC256(secret);
+            var decodedJWT = JWT.require(algorithm)
+                    .withIssuer("login-auth-api")
+                    .build()
+                    .verify(token);
+
+            return new TokenValidationResponse(true,
+                    decodedJWT.getSubject(),
+                    decodedJWT.getClaim("role").asString(),
+                    decodedJWT.getClaim("name").asString(),
+                    decodedJWT.getClaim("userId").asString());
+
+        } catch (JWTVerificationException exception) {
+            return new TokenValidationResponse(false, null, null, null, null);
+        }
+    }
+
     private Instant generateExpirationDate() {
         return LocalDateTime.now().plusHours(8).toInstant(ZoneOffset.of("-03:00"));
+    }
+
+    public static class TokenValidationResponse {
+        private boolean valid;
+        private String email;
+        private String role;
+        private String name;
+        private String userId;
+
+        public TokenValidationResponse(boolean valid, String email, String role, String name, String userId) {
+            this.valid = valid;
+            this.email = email;
+            this.role = role;
+            this.name = name;
+            this.userId = userId;
+        }
+
+        public boolean isValid() {
+            return valid;
+        }
+
+        public String getEmail() {
+            return email;
+        }
+
+        public String getRole() {
+            return role;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getUserId() {
+            return userId;
+        }
     }
 }

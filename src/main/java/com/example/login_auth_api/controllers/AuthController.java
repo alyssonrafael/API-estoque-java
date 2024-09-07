@@ -8,6 +8,7 @@ import com.example.login_auth_api.dto.ResponseDTO;
 import com.example.login_auth_api.infra.security.TokenService;
 import com.example.login_auth_api.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -35,7 +37,7 @@ public class AuthController {
             if (userOptional.isEmpty()) {
                 return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
-                        .body("Erro ao realizar login");
+                        .body(Map.of("message","Credenciais inválidas"));
             }
 
             User user = userOptional.get();
@@ -48,7 +50,7 @@ public class AuthController {
             // Verifica se a senha está correta
             if (passwordEncoder.matches(body.password(), user.getPassword())) {
                 String token = this.tokenService.generateToken(user);
-                return ResponseEntity.ok(new ResponseDTO(user.getName(), token, user.getRole()));
+                return ResponseEntity.ok(new ResponseDTO(token));
             }
 
             // Se a senha estiver incorreta, retorna bad request
@@ -67,7 +69,7 @@ public class AuthController {
             if (userCount >= 5) {
                 // Retorna um erro 400 Bad Request com uma mensagem personalizada
                 return ResponseEntity
-                        .status(HttpStatus.BAD_REQUEST)
+                        .status(HttpStatus.FORBIDDEN)
                         .body("Limite máximo de usuários atingido. Não é possível criar mais usuários.");
             }
 
@@ -98,5 +100,35 @@ public class AuthController {
                     .body("Ocorreu um erro interno no servidor.");
         }
     }
+
+    @PostMapping("/validate-token")
+    public ResponseEntity<?> validateToken(@RequestBody TokenRequest tokenRequest) {
+        String token = tokenRequest.getToken(); // Extrai o token do body da requisição
+
+        String email = tokenService.validateToken(token);
+
+        if (email != null) {
+            // Retorna status 200 com o e-mail do usuário
+            return ResponseEntity.ok(email);
+        } else {
+            // Retorna status 401 caso a validação falhe
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Token inválido ou expirado");
+        }
+    }
+
+    // Classe para receber a requisição com o token
+    public static class TokenRequest {
+        private String token;
+
+        public String getToken() {
+            return token;
+        }
+
+        public void setToken(String token) {
+            this.token = token;
+        }
+    }
+
 
 }
