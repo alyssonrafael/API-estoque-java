@@ -171,6 +171,7 @@ public class SaleService {
                     itemDTO.setId(item.getId());
                     itemDTO.setProductId(item.getProduct().getId());
                     itemDTO.setProductName(item.getProduct().getName()); // Nome do produto
+                    itemDTO.setPrice(item.getProduct().getPrice()); //pega o preço do produto
                     itemDTO.setSizeId(item.getSize().getId());
                     itemDTO.setSizeName(item.getSize().getSize()); // Nome do tamanho
                     itemDTO.setQuantity(item.getQuantity());
@@ -196,6 +197,12 @@ public class SaleService {
     // Método para listar todas as vendas
     public List<SaleDTO> listAllSales() {
         List<Sale> sales = saleRepository.findAll();
+        return sales.stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
+
+    // Método para listar as últimas 5 vendas
+    public List<SaleDTO> listLastFiveSales() {
+        List<Sale> sales = saleRepository.findTop5ByOrderBySaleDateDesc();
         return sales.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
@@ -238,6 +245,32 @@ public class SaleService {
         return sales.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+    }
+
+    // Lista as vendas por intervalo de datas e status isGift.
+    public List<SaleDTO> listSalesByDateRangeAndGiftStatus(LocalDateTime start, LocalDateTime end, Boolean isGift) {
+        List<Sale> sales;
+        if (isGift == null) {
+            // Se isGift é null, busca todas as vendas no intervalo sem filtrar por isGift.
+            sales = saleRepository.findBySaleDateBetween(start, end);
+        } else {
+            // Busca as vendas filtradas pelo status isGift.
+            sales = saleRepository.findBySaleDateBetweenAndIsGift(start, end, isGift);
+        }
+        return sales.stream().map(this::convertToDTO).toList();
+    }
+
+    // Lista todas as vendas por status isGift.
+    public List<SaleDTO> listAllSalesByGiftStatus(Boolean isGift) {
+        List<Sale> sales;
+        if (isGift == null) {
+            // Se isGift é null, busca todas as vendas sem filtrar por isGift.
+            sales = saleRepository.findAll();
+        } else {
+            // Busca as vendas filtradas pelo status isGift.
+            sales = saleRepository.findByIsGift(isGift);
+        }
+        return sales.stream().map(this::convertToDTO).toList();
     }
 
 

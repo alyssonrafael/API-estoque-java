@@ -50,10 +50,10 @@ public class ReportController {
     //Rota para listar todas as vendas ou vendas por data no formato PDF ou CSV
     @GetMapping("/sales")
     public ResponseEntity<byte[]> getSalesReport(
-            @RequestParam(required = false, defaultValue = "csv") String format,  // Parâmetro obrigatório que especifica o formato do relatório (csv ou pdf).
-            @RequestParam(required = false) String start,  // Parâmetro opcional que define a data e hora de início do intervalo de datas no formato "yyyy-MM-dd'T'HH:mm:ss".
-            // Parâmetro opcional que define a data e hora de fim do intervalo de datas no formato "yyyy-MM-dd'T'HH:mm:ss".
-            @RequestParam(required = false) String end) throws IOException {
+            @RequestParam(required = false, defaultValue = "csv") String format, // Parâmetro para o formato do relatório.
+            @RequestParam(required = false) String start, // Data e hora de início do intervalo.
+            @RequestParam(required = false) String end, // Data e hora de fim do intervalo.
+            @RequestParam(required = false) Boolean isGift) throws IOException {
 
         // Declara uma lista de vendas que será preenchida com os dados das vendas.
         List<SaleDTO> sales;
@@ -65,37 +65,33 @@ public class ReportController {
         LocalDateTime startDateTime = null;
         LocalDateTime endDateTime = null;
 
-        // Verifica se o parâmetro de data e hora de início foi fornecido e não está vazio.
+        // Converte o parâmetro de string para LocalDateTime usando o formato especificado, se fornecido.
         if (start != null && !start.isEmpty()) {
-            // Converte o parâmetro de string para LocalDateTime usando o formato especificado.
             startDateTime = LocalDateTime.parse(start, formatter);
         }
 
-        // Verifica se o parâmetro de data e hora de fim foi fornecido e não está vazio.
         if (end != null && !end.isEmpty()) {
-            // Converte o parâmetro de string para LocalDateTime usando o formato especificado.
             endDateTime = LocalDateTime.parse(end, formatter);
         }
 
-        // Se ambas as datas de início e fim foram fornecidas e convertidas, busca as vendas dentro do intervalo de datas.
+        // Lógica para buscar vendas com base nos parâmetros fornecidos.
         if (startDateTime != null && endDateTime != null) {
-            sales = saleService.listSalesByDateRange(startDateTime, endDateTime);
+            sales = saleService.listSalesByDateRangeAndGiftStatus(startDateTime, endDateTime, isGift);
         } else {
-            // Se as datas não foram fornecidas ou apenas uma delas foi fornecida, busca todas as vendas.
-            sales = saleService.listAllSales();
+            sales = saleService.listAllSalesByGiftStatus(isGift);
         }
 
         // Gera o relatório no formato solicitado e retorna a resposta com o relatório.
         return generateReportWithDateRange(format, sales, startDateTime, endDateTime);
     }
 
-
     //rota para listar produto
     @GetMapping("/products")
     public ResponseEntity<byte[]> getProductsReport(
             @RequestParam(required = false, defaultValue = "csv") String format,
             @RequestParam(required = false) Boolean deleted,
-            @RequestParam(required = false) Boolean profit) throws IOException {
+            @RequestParam(required = false) Boolean profit,
+            @RequestParam(required = false) String categoryId) throws IOException {
 
         List<ProductDTO> productDTOs;
         List<Product> products;
@@ -109,6 +105,12 @@ public class ReportController {
             }
         } else {
             products = productService.findAllProducts();
+        }
+
+        if (categoryId != null && !categoryId.isEmpty()) {
+            products = products.stream()
+                    .filter(product -> product.getCategory() != null && categoryId.equals(product.getCategory().getId()))
+                    .collect(Collectors.toList());
         }
 
         // Mapeia os produtos para DTOs
@@ -172,7 +174,6 @@ public class ReportController {
     }
 
     //Rotas para relatorio de numeros
-
     //rota para numero de vendas por metodo de pagamento
     @GetMapping("/sales-by-payment-method")
     public Map<String, Integer> getSalesByPaymentMethod() {
@@ -187,9 +188,13 @@ public class ReportController {
     }
 
     // Endpoint para retornar a quantidade de vendas com isGift = true
-    @GetMapping("/gift-sales-count")
-    public long getCountOfGiftSales() {
-        return reportNumbersService.getCountOfGiftSales();
+    @GetMapping("/gift-sales-count-month")
+    public long countByIsGiftTrueAndSaleDateBetween() {
+        return reportNumbersService.countByIsGiftTrueAndSaleDateBetween();
+    }
+    @GetMapping("/sales-count-month")
+    public long countByIsGiftFalseAndSaleDateBetween() {
+        return reportNumbersService.countByIsGiftFalseAndSaleDateBetween();
     }
 
     //rotas para retornar vendas dia mes e ano
@@ -208,9 +213,9 @@ public class ReportController {
         return reportNumbersService.getCountOfSalesThisYear();
     }
 
-    @GetMapping("/sales-last-three-months")
-    public Map<String, Integer> getSalesByMonthLastThreeMonths() {
-        return reportNumbersService.getSalesByMonthLastThreeMonths();
+    @GetMapping("/sales-last-six-months")
+    public Map<String, Integer> getSalesByMonthLastSixMonths() {
+        return reportNumbersService.getSalesByMonthLastSixMonths();
     }
     //rotas para retorno de valores dia mes ano
     @GetMapping("/total-sales-today")
@@ -228,9 +233,9 @@ public class ReportController {
         return ResponseEntity.ok(reportNumbersService.getTotalSalesThisYear());
     }
 
-    @GetMapping("/total-sales-by-month-last-three-months")
-    public Map<String, BigDecimal> getTotalSalesByMonthLastThreeMonths() {
-        return reportNumbersService.getTotalSalesByMonthLastThreeMonths();
+    @GetMapping("/total-sales-by-month-last-six-months")
+    public Map<String, BigDecimal> getTotalSalesByMonthLastSixMonths() {
+        return reportNumbersService.getTotalSalesByMonthLastSixMonths();
     }
 
     //rota para rank de categoria mais vendida do dia mes ano

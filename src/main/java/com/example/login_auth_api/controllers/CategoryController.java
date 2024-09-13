@@ -32,7 +32,18 @@ public class CategoryController {
     @GetMapping
     public ResponseEntity<List<Category>> getAllCategories() {
         try {
-            List<Category> categories = categoryRepository.findByDeletedFalse();
+            List<Category> categories = categoryRepository.findByDeletedFalseOrderByCreatedAtAsc();
+            return ResponseEntity.status(HttpStatus.OK).body(categories);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    //rota para listar as deletadas
+    @GetMapping("/deleted")
+    public ResponseEntity<List<Category>> getAllCategoriesDeleted() {
+        try {
+            List<Category> categories = categoryRepository.findByDeletedTrueOrderByCreatedAtAsc();
             return ResponseEntity.status(HttpStatus.OK).body(categories);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);

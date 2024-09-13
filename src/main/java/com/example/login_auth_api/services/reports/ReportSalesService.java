@@ -94,6 +94,7 @@ public class ReportSalesService {
             addDateRangeHeader(document, startDateTime, endDateTime);
         }
 
+
         // Configuração do título
         Paragraph title = new Paragraph("LABELEJUH " + "BAGS & SHOES")
                 .setFontSize(20)
@@ -103,6 +104,7 @@ public class ReportSalesService {
                 .setFontSize(14)
                 .setBold()
                 .setMarginBottom(20);
+
 
         // Adicionando título e subtítulo ao documento
         document.add(title);

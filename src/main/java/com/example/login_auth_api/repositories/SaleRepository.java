@@ -8,5 +8,12 @@ import java.util.List;
 
 public interface SaleRepository extends JpaRepository<Sale, String> {
     List<Sale> findBySaleDateBetween(LocalDateTime startDate, LocalDateTime endDate);
-    long countByIsGiftTrue();
+    long countByIsGiftTrueAndSaleDateBetween(LocalDateTime startDate, LocalDateTime endDate);
+    long countByIsGiftFalseAndSaleDateBetween(LocalDateTime startDate, LocalDateTime endDate);
+    List<Sale> findTop5ByOrderBySaleDateDesc();
+    // Busca por intervalo de datas e status isGift.
+    List<Sale> findBySaleDateBetweenAndIsGift(LocalDateTime start, LocalDateTime end, Boolean isGift);
+    // Busca todas as vendas com status isGift.
+    List<Sale> findByIsGift(Boolean isGift);
+
 }

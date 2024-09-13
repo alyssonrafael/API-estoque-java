@@ -48,6 +48,17 @@ public class SaleController {
         }
     }
 
+    @GetMapping("/last-five-sales")
+    public ResponseEntity<?> listLastFiveSales() {
+        try {
+            List<SaleDTO> sales = saleService.listLastFiveSales();
+            return ResponseEntity.ok(sales);
+        } catch (Exception e) {
+            // Retorna uma mensagem de erro no corpo da resposta
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ocorreu um erro interno no servidor.");
+        }
+    }
+
     // Endpoint para buscar uma venda pelo ID (ajustado para String)
     @GetMapping("/{id}")
     public ResponseEntity<?> getSaleById(@PathVariable String id) {

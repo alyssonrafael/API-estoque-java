@@ -38,6 +38,7 @@ public class SaleDTO {
         private String id;
         private String productId;
         private String productName;
+        private BigDecimal price;
         private String sizeId;
         private String sizeName;
         private Integer quantity;

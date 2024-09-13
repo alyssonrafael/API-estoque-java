@@ -11,7 +11,10 @@ import java.util.Optional;
 public interface CategoryRepository extends JpaRepository<Category, String> {
 
     // Busca todas as categorias que não estão deletadas
-    List<Category> findByDeletedFalse();
+    List<Category> findByDeletedFalseOrderByCreatedAtAsc();
+
+    //buscar todads as categorias deletadas
+    List<Category> findByDeletedTrueOrderByCreatedAtAsc();
 
     // Busca uma categoria pelo nome
     Optional<Category> findByNome(String nome);

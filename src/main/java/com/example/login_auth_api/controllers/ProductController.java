@@ -162,7 +162,7 @@ public class ProductController {
         try {
             // Obtém a contagem de produtos não deletados usando o serviço de produtos
             long productCount = productService.countProducts();
-            String message = "Quantidade de produtos não deletados: " + productCount;
+            String message = String.valueOf(productCount);
             return ResponseEntity.ok(message);
         } catch (Exception e) {
             // Retorna uma resposta de erro interno do servidor com a mensagem da exceção

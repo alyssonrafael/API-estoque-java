@@ -53,11 +53,13 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/categories").hasAnyRole("ADMIN", "USER")
                         .requestMatchers(HttpMethod.GET, "/categories").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/categories/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/categories/deleted").hasAnyRole("USER", "ADMIN")
+
 
                         //configuraóes de acesso para rotas de produtos
                         // Protege as rotas de produtos
                         .requestMatchers(HttpMethod.POST, "/products").hasRole("ADMIN") // Criar produto
-                        .requestMatchers(HttpMethod.PUT, "/products").hasRole("ADMIN") // atualizaçao completa do produto
+                        .requestMatchers(HttpMethod.PUT, "/products/**").hasRole("ADMIN") // atualizaçao completa do produto
                         .requestMatchers(HttpMethod.PUT, "/products/update-name/**").hasRole("ADMIN") // Atualizar nome do produto
                         .requestMatchers(HttpMethod.PUT, "/products/delete/**").hasRole("ADMIN") // Excluir produto marcar com deletet true
                         .requestMatchers(HttpMethod.PUT, "/products/restore/**").hasRole("ADMIN") // Restaurar produto marcar com deleted false
@@ -68,26 +70,30 @@ public class SecurityConfig {
                         //configuracoes de acesso pra rotas de vendas
                         .requestMatchers(HttpMethod.POST, "/sales").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/sales").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/sales/last-five-sales").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/sales/**").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/sales/**").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/sales/salesByDateRange/**").hasRole("ADMIN")
-
                         //configuracoes de acesso pra rotas de relatorios
                         .requestMatchers(HttpMethod.GET, "/reports/sales/**").hasRole( "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/reports/products/**").hasRole( "ADMIN")
                         //relatorios de numeros
                         .requestMatchers(HttpMethod.GET, "/reports/sales-by-payment-method").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/reports/gift-sales-count").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/reports/gift-sales-count-month").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/reports/sales-count-month").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/reports/sales-today").hasAnyRole("ADMIN", "USER")
-                        .requestMatchers(HttpMethod.GET, "/reports/sales-this-month").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/reports/sales-this-month").hasAnyRole("ADMIN", "USER")
                         .requestMatchers(HttpMethod.GET, "/reports/sales-this-year").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/reports/total-sales-today").hasAnyRole("ADMIN","USER")
                         .requestMatchers(HttpMethod.GET, "/reports/total-sales-this-month").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/reports/total-sales-this-year").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/reports/total-sales-by-month-last-three-months").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/reports/total-sales-by-month-last-six-months").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/reports/category-top-today").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/reports/category-top-this-month").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/reports/category-top-this-year").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/reports/sales-last-six-months").hasRole("ADMIN")
+
+
 
 
                         .anyRequest().authenticated()
