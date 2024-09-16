@@ -40,6 +40,7 @@ public class SecurityConfig {
                         //Restrições específicas para administradores
                         .requestMatchers(HttpMethod.PUT, "/user/changerole/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/user/authorize/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/user/unauthorize/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/users").hasRole("ADMIN")
                         //Acesso liberado para ambos USER e ADMIN
                         .requestMatchers(HttpMethod.GET, "/user/**").hasAnyRole("USER", "ADMIN")

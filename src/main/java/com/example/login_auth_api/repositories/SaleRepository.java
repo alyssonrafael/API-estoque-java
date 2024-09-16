@@ -15,5 +15,6 @@ public interface SaleRepository extends JpaRepository<Sale, String> {
     List<Sale> findBySaleDateBetweenAndIsGift(LocalDateTime start, LocalDateTime end, Boolean isGift);
     // Busca todas as vendas com status isGift.
     List<Sale> findByIsGift(Boolean isGift);
+    List<Sale> findAllByOrderBySaleDateDesc();
 
 }

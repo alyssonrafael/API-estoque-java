@@ -97,9 +97,8 @@ public class SaleService {
             if (size.getQuantity() < itemDTO.getQuantity()) {
                 // Inclui o nome do produto e o tamanho na mensagem de erro
                 String errorMessage = String.format(
-                        "Quantidade insuficiente para o produto: Nome = %s,\n ID = %s,\n Tamanho = %s,\n Quantidade disponível = %d,\n Quantidade solicitada = %d.",
+                        "Quantidade insuficiente para o produto: Nome = %s,\n Tamanho = %s,\n Quantidade disponível = %d,\n Quantidade solicitada = %d.",
                         product.getName(),
-                        product.getId(),
                         size.getSize(),
                         size.getQuantity(),
                         itemDTO.getQuantity()
@@ -194,9 +193,9 @@ public class SaleService {
         return convertToDTO(sale);
     }
 
-    // Método para listar todas as vendas
+    // Método para listar todas as vendas em ordem cronológica (do mais recente para o mais velho)
     public List<SaleDTO> listAllSales() {
-        List<Sale> sales = saleRepository.findAll();
+        List<Sale> sales = saleRepository.findAllByOrderBySaleDateDesc(); // Retorna em ordem decrescente
         return sales.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
