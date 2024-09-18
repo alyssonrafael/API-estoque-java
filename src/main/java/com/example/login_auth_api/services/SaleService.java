@@ -40,9 +40,17 @@ public class SaleService {
     //Método para criar uma venda
     @Transactional
     public Sale createSale(SaleDTO saleDTO) {
+        System.out.println("Data recebida: " + saleDTO.getSaleDate());
         // Criação da venda com campos básicos
         Sale sale = new Sale();
-        sale.setSaleDate(LocalDateTime.now());
+        // Verifica se a data foi fornecida no DTO
+        if (saleDTO.getSaleDate() != null) {
+            sale.setSaleDate(saleDTO.getSaleDate());
+        } else {
+            sale.setSaleDate(LocalDateTime.now()); // Data atual como fallback
+        }
+        System.out.println("Data recebida: " + saleDTO.getSaleDate());
+
         sale.setTotalAmount(BigDecimal.ZERO);
         sale.setObservation(saleDTO.getObservation());
         sale.setPaymentMethod(saleDTO.getPaymentMethod());

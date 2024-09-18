@@ -60,7 +60,6 @@ public class Sale {
 
     @PrePersist
     protected void onCreate() {
-        saleDate = LocalDateTime.now(); // Define a data da venda automaticamente
         totalAmount = BigDecimal.ZERO;
     }
 
